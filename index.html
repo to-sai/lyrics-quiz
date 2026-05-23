@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歌詞当てクイズ</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    #lyrics-box { background: #f5f5f5; padding: 20px; border-radius: 8px; font-size: 1.1em; line-height: 1.8; white-space: pre-wrap; }
+    input { width: 100%; padding: 10px; font-size: 1em; margin-top: 16px; box-sizing: border-box; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 1em; cursor: pointer; }
+    #result { margin-top: 16px; font-size: 1.1em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>歌詞当てクイズ</h1>
+  <p>この歌詞はどの曲？</p>
+  <div id="lyrics-box">読み込み中...</div>
+  <input type="text" id="answer" placeholder="曲名を入力してください">
+  <button onclick="checkAnswer()">答える</button>
+  <button onclick="loadQuestion()">スキップ</button>
+  <div id="result"></div>
+
+  <script>
+    const API_KEY = "API キー 1";        // ← 書き換え①
+    const SHEET_ID = "105VM2ebUYbKNixX_V4zigkZZEobbBFwmubBiz7b8W10"; // ← 書き換え②
+    const SHEET_NAME = "歌詞_元データ";                   // ← 書き換え③（シートのタブ名）
+
+    let currentAnswer = "";
+
+    async function fetchData() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      return json.values.slice(1); // 1行目（見出し）を除く
+    }
+
+    async function loadQuestion() {
+      document.getElementById("result").textContent = "";
+      document.getElementById("answer").value = "";
+      const data = await fetchData();
+      const row = data[Math.floor(Math.random() * data.length)];
+      const [title, artist, user, lyrics] = row;
+      currentAnswer = title;
+
+      // 歌詞をランダムな位置から3行切り取る
+      const lines = lyrics.split("\n").filter(l => l.trim() !== "");
+      const start = Math.floor(Math.random() * Math.max(1, lines.length - 3));
+      const snippet = lines.slice(start, start + 3).join("\n");
+      document.getElementById("lyrics-box").textContent = snippet;
+    }
+
+    function checkAnswer() {
+      const input = document.getElementById("answer").value.trim();
+      const result = document.getElementById("result");
+      if (input === currentAnswer) {
+        result.style.color = "green";
+        result.textContent = "正解！";
+      } else {
+        result.style.color = "red";
+        result.textContent = `不正解… 正解は「${currentAnswer}」`;
+      }
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
